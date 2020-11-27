@@ -5,12 +5,15 @@
   "scripts": {
     "build": "microbundle",
     "lint": "eslint lib/**/*.{js,ts} --max-warnings 0",
+    "pretest": "yarn run build",
     "test": "ava"
   },
   "source": "lib/index.ts",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "esmodule": "dist/index.modern.js",
+  "unpkg": "dist/index.umd.js",
+  "sideEffects": false,
   "devDependencies": {
     "@types/puppeteer": "^5.4.0",
     "@typescript-eslint/eslint-plugin": "^4.8.2",
