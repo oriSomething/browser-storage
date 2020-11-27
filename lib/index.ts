@@ -2,7 +2,6 @@
  * Used to access to the real `Map` conatains all data of storage instance
  */
 const STORAGE_SYMBOL = Symbol("BrowserStorage storage");
-
 //#region Helpers
 /**
  * Return the value that closest to how borwsers convert to string values in `localStorage`
@@ -23,6 +22,14 @@ function getStorage(instance: BrowserStorage) {
 class StorageMap {
   private _map = new Map<string, string>();
 
+  //#region Listeners
+  clearListeners = new Set<() => void>();
+  propertyChangeListeners = new Set<
+    (key: string, value: string | null) => void
+  >();
+  //#endregion
+
+  //#region Map needed functionality
   has(key: PropertyKey) {
     return this._map.has(getString(key));
   }
@@ -32,16 +39,38 @@ class StorageMap {
   }
 
   set(key: PropertyKey, value: string) {
-    this._map.set(getString(key), getString(value));
+    const k = getString(key);
+    const v = getString(value);
+    this._map.set(k, v);
+
+    if (this.propertyChangeListeners.size !== 0) {
+      for (let cb of this.propertyChangeListeners) {
+        cb(k, v);
+      }
+    }
+
     return this;
   }
 
   clear() {
     this._map.clear();
+
+    if (this.clearListeners.size !== 0) {
+      for (let cb of this.clearListeners) cb();
+    }
   }
 
   delete(key: PropertyKey) {
-    return this._map.delete(getString(key));
+    const k = getString(key);
+    const returnValue = this._map.delete(k);
+
+    if (this.propertyChangeListeners.size !== 0) {
+      for (let cb of this.propertyChangeListeners) {
+        cb(k, null);
+      }
+    }
+
+    return returnValue;
   }
 
   get size() {
@@ -51,6 +80,7 @@ class StorageMap {
   *keys() {
     yield* this._map.keys();
   }
+  //#endregion
 }
 //#endregion
 
@@ -177,6 +207,34 @@ export function getStoragePrivateStorageMap(
 ): StorageMap {
   return getStorage(storage);
 }
+
+export function subscribePropertyChange(
+  storage: BrowserStorage,
+  listener: (key: string, value: string | null) => void
+): () => void {
+  let s: StorageMap | undefined = getStoragePrivateStorageMap(storage);
+  s.propertyChangeListeners.add(listener);
+
+  return () => {
+    if (s?.propertyChangeListeners.delete(listener)) {
+      s = undefined;
+    }
+  };
+}
+
+export function subscribeClear(
+  storage: BrowserStorage,
+  listener: () => void
+): () => void {
+  let s: StorageMap | undefined = getStoragePrivateStorageMap(storage);
+  s.clearListeners.add(listener);
+
+  return () => {
+    if (s?.clearListeners.delete(listener)) {
+      s = undefined;
+    }
+  };
+}
 //#endregion
 
 //#region TODO
@@ -188,5 +246,4 @@ export function getStoragePrivateStorageMap(
 //  */
 // export function setWithEmitStorage(storage: BrowserStorage, key: string, value: string | null) {}
 
-// export function subscribeProperyChange(storage: BrowserStorage, listener: (key: string, value: string | null) => void): () => void {}
 //#endregion

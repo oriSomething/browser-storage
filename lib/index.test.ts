@@ -1,6 +1,11 @@
 //#region Imports
 import test from "ava";
-import { BrowserStorage, getStoragePrivateStorageMap } from ".";
+import {
+  subscribeClear,
+  subscribePropertyChange,
+  BrowserStorage,
+  getStoragePrivateStorageMap,
+} from "./index";
 //#endregion
 
 //#region Integration
@@ -19,7 +24,7 @@ test("getItem -> setItem -> getItem", (t) => {
 });
 //#endregion
 
-//#region Unit
+//#region Unit - Storage API
 test("getItem()", (t) => {
   const s = new BrowserStorage();
   getStoragePrivateStorageMap(s)
@@ -205,4 +210,56 @@ test("JSON.stringify()", (t) => {
  * @todo When supported
  */
 test.todo("Reflect.defineProperty(…)");
+//#endregion
+
+//#region Unit - Hooks
+test("subscribePropertyChange(): setItem", (t) => {
+  t.plan(4);
+
+  const s = new BrowserStorage();
+
+  let counter = 0;
+
+  const off = subscribePropertyChange(s, (key, value) => {
+    t.is(key, "zzz");
+    t.is(value, String(counter));
+  });
+
+  s.setItem("zzz", String(++counter));
+  s.setItem("zzz", String(++counter));
+  off();
+
+  s.setItem("zzz", String(++counter));
+});
+
+test("subscribePropertyChange(): removeItem", (t) => {
+  t.plan(2);
+
+  const s = new BrowserStorage();
+
+  s.setItem("zzz", "1");
+
+  const off = subscribePropertyChange(s, (key, value) => {
+    t.is(key, "zzz");
+    t.is(value, null);
+  });
+
+  s.removeItem("zzz");
+  off();
+  s.removeItem("zzz");
+});
+
+test("subscribeClear()", (t) => {
+  t.plan(1);
+
+  const s = new BrowserStorage();
+
+  const off = subscribeClear(s, () => {
+    t.pass();
+  });
+
+  s.clear();
+  off();
+  s.clear();
+});
 //#endregion
