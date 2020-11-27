@@ -238,12 +238,77 @@ export function subscribeClear(
 //#endregion
 
 //#region TODO
-// /**
-//  * Works only on browser context
-//  * @param storage
-//  * @param key
-//  * @param value (`null` for deleting properties)
-//  */
-// export function setWithEmitStorage(storage: BrowserStorage, key: string, value: string | null) {}
+/**
+ * Set given key and emit `storage` event on `window`.
+ * Works only on browser context.
+ * `storageArea` can only be `null` or `Storage` instance that cannot be sub-class currently.
+ * @param storage
+ * @param key
+ * @param value (`null` for deleting properties)
+ */
+export function setWithEmitStorage(
+  storage: BrowserStorage,
+  key: string,
+  newValue: string
+): void {
+  const oldValue = storage.getItem(key);
+  storage.setItem(key, newValue);
 
+  // Works only on browser context
+  if (typeof window === "undefined" || typeof StorageEvent === "undefined") {
+    return;
+  }
+
+  // Gets normalized value first
+  const newValue_ = storage.getItem(key);
+
+  // Emits only on change
+  if (oldValue !== newValue_) {
+    const event = new StorageEvent("storage", {
+      storageArea: null,
+      key,
+      newValue: newValue_,
+      oldValue,
+      bubbles: false,
+      cancelable: false,
+    });
+
+    window.dispatchEvent(event);
+  }
+}
+
+/**
+ * Remove given key and emit `storage` event on `window`.
+ * Works only on browser context.
+ * `storageArea` can only be `null` or `Storage` instance that cannot be sub-class currently.
+ * @param storage
+ * @param key
+ * @param value (`null` for deleting properties)
+ */
+export function removeWithEmitStorage(
+  storage: BrowserStorage,
+  key: string
+): void {
+  const oldValue = storage.getItem(key);
+  storage.removeItem(key);
+
+  // Works only on browser context
+  if (typeof window === "undefined" || typeof StorageEvent === "undefined") {
+    return;
+  }
+
+  // Emits only on change
+  if (oldValue !== null) {
+    const event = new StorageEvent("storage", {
+      storageArea: null,
+      key,
+      newValue: null,
+      oldValue,
+      bubbles: false,
+      cancelable: false,
+    });
+
+    window.dispatchEvent(event);
+  }
+}
 //#endregion

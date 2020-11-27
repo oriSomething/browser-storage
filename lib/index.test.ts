@@ -5,7 +5,15 @@ import {
   subscribePropertyChange,
   BrowserStorage,
   getStoragePrivateStorageMap,
+  setWithEmitStorage,
+  removeWithEmitStorage,
 } from "./index";
+import withPage from "../test-utils/with-page";
+
+/**
+ * Used for tests with puppeteer
+ */
+declare var browserStorage: typeof import("./index");
 //#endregion
 
 //#region Integration
@@ -261,5 +269,79 @@ test("subscribeClear()", (t) => {
   s.clear();
   off();
   s.clear();
+});
+//#endregion
+
+//#region E2E tests
+test("Emulating storage event for setItem", withPage, async (t, page) => {
+  const result = await page.evaluate(() => {
+    const s = new browserStorage.BrowserStorage();
+
+    var returnValue: any;
+
+    window.addEventListener("storage", (event) => {
+      returnValue = {
+        type: "storage",
+        storageArea: event.storageArea,
+        key: event.key,
+        newValue: event.newValue,
+        oldValue: event.oldValue,
+      };
+    });
+
+    browserStorage.setWithEmitStorage(s, "abc", "zzz");
+
+    return returnValue;
+  });
+
+  t.deepEqual(result, {
+    type: "storage",
+    storageArea: null,
+    key: "abc",
+    oldValue: null,
+    newValue: "zzz",
+  });
+});
+
+test("Emulating storage event for removeItem", withPage, async (t, page) => {
+  const result = await page.evaluate(() => {
+    const s = new browserStorage.BrowserStorage();
+
+    var returnValue: any;
+
+    window.addEventListener("storage", (event) => {
+      returnValue = {
+        type: "storage",
+        storageArea: event.storageArea,
+        key: event.key,
+        newValue: event.newValue,
+        oldValue: event.oldValue,
+      };
+    });
+
+    s.setItem("abc", "zzz");
+    browserStorage.removeWithEmitStorage(s, "abc");
+
+    return returnValue;
+  });
+
+  t.deepEqual(result, {
+    type: "storage",
+    storageArea: null,
+    key: "abc",
+    oldValue: "zzz",
+    newValue: null,
+  });
+});
+
+test.todo("Emulating storage event, won't happens if value didn't change");
+
+test("Emulating is noop in non-Browser context context", (t) => {
+  const s = new BrowserStorage();
+
+  setWithEmitStorage(s, "abc", "zzz");
+  removeWithEmitStorage(s, "abc");
+
+  t.pass();
 });
 //#endregion
