@@ -1,0 +1,13 @@
+/dist/*
+
+# Node + Yarn
+/node_modules/*
+/.yarn/*
+!/.yarn/releases
+!/.yarn/plugins
+!/.yarn/sdks
+/.yarn/cache
+#/.pnp.*
+
+# IDEs
+/.vscode/*

@@ -1,0 +1,192 @@
+/**
+ * Used to access to the real `Map` conatains all data of storage instance
+ */
+const STORAGE_SYMBOL = Symbol("BrowserStorage storage");
+
+//#region Helpers
+/**
+ * Return the value that closest to how borwsers convert to string values in `localStorage`
+ */
+function getString(value: any) {
+  return "" + value;
+}
+
+function getStorage(instance: BrowserStorage) {
+  return (instance as any)[STORAGE_SYMBOL] as StorageMap;
+}
+//#endregion
+
+//#region StorageMap
+/**
+ * Wrapper to `Map` with needed modifications to work more as `localStorage` is
+ */
+class StorageMap {
+  private _map = new Map<string, string>();
+
+  has(key: PropertyKey) {
+    return this._map.has(getString(key));
+  }
+
+  get(key: PropertyKey) {
+    return this._map.get(getString(key));
+  }
+
+  set(key: PropertyKey, value: string) {
+    this._map.set(getString(key), getString(value));
+    return this;
+  }
+
+  clear() {
+    this._map.clear();
+  }
+
+  delete(key: PropertyKey) {
+    return this._map.delete(getString(key));
+  }
+
+  get size() {
+    return this._map.size;
+  }
+
+  *keys() {
+    yield* this._map.keys();
+  }
+}
+//#endregion
+
+//#region Proxy creator
+/**
+ * @todo `defineProperty` support. (Never actually see support to such as edge case)
+ */
+function createProxy(instance: BrowserStorage) {
+  const storage = new StorageMap();
+
+  //#region Proxy wrapper
+  const proxy = new Proxy(instance, {
+    has: (target, key) => {
+      return Reflect.has(target, key) || storage.has(key);
+    },
+
+    get: (target, key, receiver) => {
+      if (key === STORAGE_SYMBOL) return storage;
+
+      if (Reflect.has(target, key)) {
+        return Reflect.get(target, key, receiver);
+      } else {
+        return storage.get(key);
+      }
+    },
+
+    ownKeys: (target) => {
+      return [...Reflect.ownKeys(target), ...storage.keys()];
+    },
+
+    getOwnPropertyDescriptor: (target, property) => {
+      const value = Reflect.getOwnPropertyDescriptor(target, property);
+      if (value !== undefined) return value;
+
+      if (storage.has(property)) {
+        return {
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+          value: storage.get(property)!,
+          writable: true,
+          enumerable: true,
+          configurable: true,
+        };
+      }
+
+      return undefined;
+    },
+
+    set: (target, property, value, receiver) => {
+      if (Reflect.has(target, property)) {
+        return Reflect.set(target, property, value, receiver);
+      }
+
+      storage.set(property, value);
+      return true;
+    },
+
+    // NOTE: Not sure if there is any case it returns `false`
+    deleteProperty: (target, property) => {
+      Reflect.deleteProperty(target, property);
+      storage.delete(property);
+      return true;
+    },
+  });
+  //#endregion
+
+  return proxy;
+}
+//#endregion
+
+export class BrowserStorage implements Storage {
+  [name: string]: any;
+
+  constructor() {
+    // The magic behind `localStorage` special behaviour
+    // NOTE: In JS if your return an object from `constructor` it become the actual
+    //       object returned from `new` expression
+    return createProxy(this);
+  }
+
+  get length(): number {
+    return getStorage(this).size;
+  }
+
+  clear(): void {
+    getStorage(this).clear();
+  }
+
+  getItem(key: string): string | null {
+    return getStorage(this).get(key) ?? null;
+  }
+
+  key(index: number): string | null {
+    let count = 0;
+
+    for (let key of getStorage(this).keys()) {
+      if (count === index) {
+        return key;
+      }
+      count++;
+    }
+
+    return null;
+  }
+
+  removeItem(key: string): void {
+    getStorage(this).delete(key);
+  }
+
+  /**
+   * @todo Support `QuotaExceededError` throwing for settings "size limit"
+   */
+  setItem(key: string, value: string): void {
+    getStorage(this).set(key, value);
+  }
+}
+
+//#region Public helpers
+/**
+ * Used mainly for tests or if you want to push many items with overcome some bureaucracy
+ * @param storage
+ */
+export function getStoragePrivateStorageMap(
+  storage: BrowserStorage
+): StorageMap {
+  return getStorage(storage);
+}
+//#endregion
+
+//#region TODO
+// /**
+//  * Works only on browser context
+//  * @param storage
+//  * @param key
+//  * @param value (`null` for deleting properties)
+//  */
+// export function setWithEmitStorage(storage: BrowserStorage, key: string, value: string | null) {}
+
+// export function subscribeProperyChange(storage: BrowserStorage, listener: (key: string, value: string | null) => void): () => void {}
+//#endregion

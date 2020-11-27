@@ -1,0 +1,35 @@
+{
+  "compilerOptions": {
+    /* Visit https://aka.ms/tsconfig.json to read more about this file */
+
+    /* Basic Options */
+    "target": "ESNext",                 
+    "module": "ESNext",               
+    "lib": ["DOM", "ESNext"],                          
+    "isolatedModules": true,            
+
+    /* Strict Type-Checking Options */
+    "strict": true,
+
+    /* Additional Checks */
+    "noUnusedLocals": true,                
+    "noUnusedParameters": true,            
+    "noImplicitReturns": true,             
+    "noFallthroughCasesInSwitch": true,    
+    "noUncheckedIndexedAccess": true,      
+    "importsNotUsedAsValues": "error",
+
+    /* Module Resolution Options */
+    "moduleResolution": "node",
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true, 
+
+    /* Source Map Options */
+
+    /* Experimental Options */
+
+    /* Advanced Options */
+    "skipLibCheck": true,                     /* Skip type checking of declaration files. */
+    "forceConsistentCasingInFileNames": true  /* Disallow inconsistently-cased references to the same file. */
+  }
+}
