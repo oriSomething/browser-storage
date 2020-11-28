@@ -215,9 +215,65 @@ test("JSON.stringify()", (t) => {
 });
 
 /**
- * @todo When supported
+ * Based with modifications @see {@link https://github.com/web-platform-tests/wpt/blob/master/webstorage/defineProperty.window.js}
  */
-test.todo("Reflect.defineProperty(…)");
+[9, "x"].forEach(function (key) {
+  test(`Reflect.defineProperty(…): Defining data property for key ${key}`, (t) => {
+    var desc = {
+      value: "value",
+    };
+
+    const storage = new BrowserStorage();
+    key = key as string;
+
+    t.is(storage[key], undefined);
+    t.is(storage.getItem(key), null);
+    t.is(Object.defineProperty(storage, key, desc), storage);
+    t.is(storage[key], "value");
+    t.is(storage.getItem(key), "value");
+  });
+
+  test(`Defining data property for key ${key} twice"`, (t) => {
+    var desc1 = {
+      value: "value",
+    };
+    var desc2 = {
+      value: "new value",
+    };
+
+    var storage = new BrowserStorage();
+    key = key as string;
+
+    t.is(storage[key], undefined);
+    t.is(storage.getItem(key), null);
+    t.is(Object.defineProperty(storage, key, desc1), storage);
+    t.is(storage[key], "value");
+    t.is(storage.getItem(key), "value");
+
+    t.is(Object.defineProperty(storage, key, desc2), storage);
+    t.is(storage[key], "new value");
+    t.is(storage.getItem(key), "new value");
+  });
+
+  test(`Defining data property with toString for key ${key}`, (t) => {
+    var desc = {
+      value: {
+        toString: function () {
+          return "value";
+        },
+      },
+    };
+
+    var storage = new BrowserStorage();
+    key = key as string;
+
+    t.is(storage[key], undefined);
+    t.is(storage.getItem(key), null);
+    t.is(Object.defineProperty(storage, key, desc), storage);
+    t.is(storage[key], "value");
+    t.is(storage.getItem(key), "value");
+  });
+});
 //#endregion
 
 //#region Unit - Hooks
@@ -282,7 +338,7 @@ test("Emulating storage event for setItem", withPage, async (t, page) => {
     window.addEventListener("storage", (event) => {
       returnValue = {
         type: "storage",
-        storageArea: event.storageArea,
+        is_storageArea: event.storageArea === s,
         key: event.key,
         newValue: event.newValue,
         oldValue: event.oldValue,
@@ -296,7 +352,7 @@ test("Emulating storage event for setItem", withPage, async (t, page) => {
 
   t.deepEqual(result, {
     type: "storage",
-    storageArea: null,
+    is_storageArea: true,
     key: "abc",
     oldValue: null,
     newValue: "zzz",
@@ -312,7 +368,7 @@ test("Emulating storage event for removeItem", withPage, async (t, page) => {
     window.addEventListener("storage", (event) => {
       returnValue = {
         type: "storage",
-        storageArea: event.storageArea,
+        is_storageArea: event.storageArea === s,
         key: event.key,
         newValue: event.newValue,
         oldValue: event.oldValue,
@@ -327,7 +383,7 @@ test("Emulating storage event for removeItem", withPage, async (t, page) => {
 
   t.deepEqual(result, {
     type: "storage",
-    storageArea: null,
+    is_storageArea: true,
     key: "abc",
     oldValue: "zzz",
     newValue: null,

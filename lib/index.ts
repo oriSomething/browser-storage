@@ -137,6 +137,24 @@ function createProxy(instance: BrowserStorage) {
       return true;
     },
 
+    /**
+     * `configurable`, `enumerable`, `writable` are ignored.
+     * Getters and setters aren't allowed
+     */
+    defineProperty: (target, property, attributes) => {
+      if (Reflect.has(target, property)) {
+        return Reflect.defineProperty(target, property, attributes);
+      }
+
+      if (attributes.get !== undefined || attributes.set !== undefined) {
+        throw new TypeError("Accessor properties are not allowed");
+      }
+
+      storage.set(property, attributes.value);
+
+      return true;
+    },
+
     // NOTE: Not sure if there is any case it returns `false`
     deleteProperty: (target, property) => {
       Reflect.deleteProperty(target, property);
@@ -242,6 +260,7 @@ export function subscribeClear(
  * Set given key and emit `storage` event on `window`.
  * Works only on browser context.
  * `storageArea` can only be `null` or `Storage` instance that cannot be sub-class currently.
+ * So we patch `storageArea` with `Object.defineProperty`.
  * @param storage
  * @param key
  * @param value (`null` for deleting properties)
@@ -273,6 +292,10 @@ export function setWithEmitStorage(
       cancelable: false,
     });
 
+    Object.defineProperty(event, "storageArea", {
+      get: () => storage,
+    });
+
     window.dispatchEvent(event);
   }
 }
@@ -281,6 +304,7 @@ export function setWithEmitStorage(
  * Remove given key and emit `storage` event on `window`.
  * Works only on browser context.
  * `storageArea` can only be `null` or `Storage` instance that cannot be sub-class currently.
+ * So we patch `storageArea` with `Object.defineProperty`.
  * @param storage
  * @param key
  * @param value (`null` for deleting properties)
@@ -306,6 +330,10 @@ export function removeWithEmitStorage(
       oldValue,
       bubbles: false,
       cancelable: false,
+    });
+
+    Object.defineProperty(event, "storageArea", {
+      get: () => storage,
     });
 
     window.dispatchEvent(event);
