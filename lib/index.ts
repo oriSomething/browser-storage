@@ -187,7 +187,8 @@ export class BrowserStorage implements Storage {
   }
 
   getItem(key: string): string | null {
-    return getStorage(this).get(key) ?? null;
+    const value = getStorage(this).get(key);
+    return value == null ? null : value;
   }
 
   key(index: number): string | null {
@@ -234,7 +235,7 @@ export function subscribePropertyChange(
   s.propertyChangeListeners.add(listener);
 
   return () => {
-    if (s?.propertyChangeListeners.delete(listener)) {
+    if (s != null && s.propertyChangeListeners.delete(listener)) {
       s = undefined;
     }
   };
@@ -248,7 +249,7 @@ export function subscribeClear(
   s.clearListeners.add(listener);
 
   return () => {
-    if (s?.clearListeners.delete(listener)) {
+    if (s != null && s.clearListeners.delete(listener)) {
       s = undefined;
     }
   };
