@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "license": "MIT",
   "scripts": {
+    "prepack": "rm -rf dist && yarn run build",
     "build": "microbundle",
     "lint": "eslint lib/**/*.{js,ts} --max-warnings 0",
     "pretest": "yarn run build",
