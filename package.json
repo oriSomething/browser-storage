@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "license": "MIT",
   "scripts": {
+    "prepack": "rm -rf dist && yarn run build",
     "build": "microbundle",
     "lint": "eslint lib/**/*.{js,ts} --max-warnings 0",
     "pretest": "yarn run build",
@@ -17,6 +18,10 @@
   "resolutions": {
     "typescript": "^4.1.2"
   },
+  "files": [
+    "dist/*",
+    "tsconfig.json"
+  ],
   "devDependencies": {
     "@types/puppeteer": "^5.4.0",
     "@typescript-eslint/eslint-plugin": "^4.8.2",
