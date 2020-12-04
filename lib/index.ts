@@ -2,6 +2,7 @@
  * Used to access to the real `Map` conatains all data of storage instance
  */
 const STORAGE_SYMBOL = Symbol("BrowserStorage storage");
+
 //#region Helpers
 /**
  * Return the value that closest to how borwsers convert to string values in `localStorage`
@@ -254,9 +255,7 @@ export function subscribeClear(
     }
   };
 }
-//#endregion
 
-//#region TODO
 /**
  * Set given key and emit `storage` event on `window`.
  * Works only on browser context.
