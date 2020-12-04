@@ -3,26 +3,26 @@
     /* Visit https://aka.ms/tsconfig.json to read more about this file */
 
     /* Basic Options */
-    "target": "ESNext",                 
-    "module": "ESNext",               
-    "lib": ["DOM", "ESNext"],                          
-    "isolatedModules": true,            
+    "target": "ESNext",
+    "module": "commonjs",
+    "lib": ["DOM", "ESNext"],
+    "isolatedModules": true,
 
     /* Strict Type-Checking Options */
     "strict": true,
 
     /* Additional Checks */
-    "noUnusedLocals": true,                
-    "noUnusedParameters": true,            
-    "noImplicitReturns": true,             
-    "noFallthroughCasesInSwitch": true,    
-    "noUncheckedIndexedAccess": true,      
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
     "importsNotUsedAsValues": "error",
 
     /* Module Resolution Options */
     "moduleResolution": "node",
     "allowSyntheticDefaultImports": true,
-    "esModuleInterop": true, 
+    "esModuleInterop": true,
 
     /* Source Map Options */
 

@@ -1,6 +1,19 @@
 //#region Imports
 import test from "ava";
-import { BrowserStorage, getStoragePrivateStorageMap } from ".";
+import {
+  subscribeClear,
+  subscribePropertyChange,
+  BrowserStorage,
+  getStoragePrivateStorageMap,
+  setWithEmitStorage,
+  removeWithEmitStorage,
+} from "./index";
+import withPage from "../test-utils/with-page";
+
+/**
+ * Used for tests with puppeteer
+ */
+declare var browserStorage: typeof import("./index");
 //#endregion
 
 //#region Integration
@@ -19,7 +32,7 @@ test("getItem -> setItem -> getItem", (t) => {
 });
 //#endregion
 
-//#region Unit
+//#region Unit - Storage API
 test("getItem()", (t) => {
   const s = new BrowserStorage();
   getStoragePrivateStorageMap(s)
@@ -200,9 +213,130 @@ test("JSON.stringify()", (t) => {
 
   t.is(JSON.stringify(s), `{"a":"1","b":"2","c":"3"}`);
 });
+//#endregion
 
-/**
- * @todo When supported
- */
-test.todo("Reflect.defineProperty(…)");
+//#region Unit - Hooks
+test("subscribePropertyChange(): setItem", (t) => {
+  t.plan(4);
+
+  const s = new BrowserStorage();
+
+  let counter = 0;
+
+  const off = subscribePropertyChange(s, (key, value) => {
+    t.is(key, "zzz");
+    t.is(value, String(counter));
+  });
+
+  s.setItem("zzz", String(++counter));
+  s.setItem("zzz", String(++counter));
+  off();
+
+  s.setItem("zzz", String(++counter));
+});
+
+test("subscribePropertyChange(): removeItem", (t) => {
+  t.plan(2);
+
+  const s = new BrowserStorage();
+
+  s.setItem("zzz", "1");
+
+  const off = subscribePropertyChange(s, (key, value) => {
+    t.is(key, "zzz");
+    t.is(value, null);
+  });
+
+  s.removeItem("zzz");
+  off();
+  s.removeItem("zzz");
+});
+
+test("subscribeClear()", (t) => {
+  t.plan(1);
+
+  const s = new BrowserStorage();
+
+  const off = subscribeClear(s, () => {
+    t.pass();
+  });
+
+  s.clear();
+  off();
+  s.clear();
+});
+//#endregion
+
+//#region E2E tests
+test("Emulating storage event for setItem", withPage, async (t, page) => {
+  const result = await page.evaluate(() => {
+    const s = new browserStorage.BrowserStorage();
+
+    var returnValue: any;
+
+    window.addEventListener("storage", (event) => {
+      returnValue = {
+        type: "storage",
+        is_storageArea: event.storageArea === s,
+        key: event.key,
+        newValue: event.newValue,
+        oldValue: event.oldValue,
+      };
+    });
+
+    browserStorage.setWithEmitStorage(s, "abc", "zzz");
+
+    return returnValue;
+  });
+
+  t.deepEqual(result, {
+    type: "storage",
+    is_storageArea: true,
+    key: "abc",
+    oldValue: null,
+    newValue: "zzz",
+  });
+});
+
+test("Emulating storage event for removeItem", withPage, async (t, page) => {
+  const result = await page.evaluate(() => {
+    const s = new browserStorage.BrowserStorage();
+
+    var returnValue: any;
+
+    window.addEventListener("storage", (event) => {
+      returnValue = {
+        type: "storage",
+        is_storageArea: event.storageArea === s,
+        key: event.key,
+        newValue: event.newValue,
+        oldValue: event.oldValue,
+      };
+    });
+
+    s.setItem("abc", "zzz");
+    browserStorage.removeWithEmitStorage(s, "abc");
+
+    return returnValue;
+  });
+
+  t.deepEqual(result, {
+    type: "storage",
+    is_storageArea: true,
+    key: "abc",
+    oldValue: "zzz",
+    newValue: null,
+  });
+});
+
+test.todo("Emulating storage event, won't happens if value didn't change");
+
+test("Emulating is noop in non-Browser context context", (t) => {
+  const s = new BrowserStorage();
+
+  setWithEmitStorage(s, "abc", "zzz");
+  removeWithEmitStorage(s, "abc");
+
+  t.pass();
+});
 //#endregion
