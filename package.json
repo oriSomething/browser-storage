@@ -2,6 +2,14 @@
   "name": "@orisomething/browser-storage",
   "version": "0.1.0",
   "license": "MIT",
+  "author": "Ori Livni",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/oriSomething/browser-storage"
+  },
+  "engines": {
+    "node": ">= 12"
+  },
   "scripts": {
     "prepack": "rm -rf dist && yarn run build",
     "build": "microbundle",
