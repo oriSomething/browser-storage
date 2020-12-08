@@ -11,8 +11,8 @@
     "node": ">= 12"
   },
   "scripts": {
-    "prepack": "rm -rf dist && yarn run build",
-    "build": "microbundle",
+    "prepack": "yarn run build",
+    "build": "rm -rf dist && microbundle --target node --compress",
     "lint": "eslint lib/**/*.{js,ts} --max-warnings 0",
     "pretest": "yarn run build",
     "test": "ava"
@@ -52,5 +52,8 @@
   },
   "browserslist": [
     "node 12"
-  ]
+  ],
+  "mangle": {
+    "regex": "^_"
+  }
 }
