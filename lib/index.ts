@@ -24,10 +24,22 @@ class StorageMap {
   private _map = new Map<string, string>();
 
   //#region Listeners
-  clearListeners = new Set<() => void>();
-  propertyChangeListeners = new Set<
+  private _clearListeners = new Set<() => void>();
+  private _propertyChangeListeners = new Set<
     (key: string, value: string | null) => void
   >();
+
+  onPropertyChange(
+    listener: (key: string, value: string | null) => void
+  ): () => void {
+    this._propertyChangeListeners.add(listener);
+    return () => void this._propertyChangeListeners.delete(listener);
+  }
+
+  onClearChange(listener: () => void): () => void {
+    this._clearListeners.add(listener);
+    return () => void this._clearListeners.delete(listener);
+  }
   //#endregion
 
   //#region Map needed functionality
@@ -44,8 +56,8 @@ class StorageMap {
     const v = getString(value);
     this._map.set(k, v);
 
-    if (this.propertyChangeListeners.size !== 0) {
-      for (let cb of this.propertyChangeListeners) {
+    if (this._propertyChangeListeners.size !== 0) {
+      for (let cb of this._propertyChangeListeners) {
         cb(k, v);
       }
     }
@@ -56,8 +68,8 @@ class StorageMap {
   clear() {
     this._map.clear();
 
-    if (this.clearListeners.size !== 0) {
-      for (let cb of this.clearListeners) cb();
+    if (this._clearListeners.size !== 0) {
+      for (let cb of this._clearListeners) cb();
     }
   }
 
@@ -65,8 +77,8 @@ class StorageMap {
     const k = getString(key);
     const returnValue = this._map.delete(k);
 
-    if (this.propertyChangeListeners.size !== 0) {
-      for (let cb of this.propertyChangeListeners) {
+    if (this._propertyChangeListeners.size !== 0) {
+      for (let cb of this._propertyChangeListeners) {
         cb(k, null);
       }
     }
@@ -232,28 +244,16 @@ export function subscribePropertyChange(
   storage: BrowserStorage,
   listener: (key: string, value: string | null) => void
 ): () => void {
-  let s: StorageMap | undefined = getStoragePrivateStorageMap(storage);
-  s.propertyChangeListeners.add(listener);
-
-  return () => {
-    if (s != null && s.propertyChangeListeners.delete(listener)) {
-      s = undefined;
-    }
-  };
+  let s = getStoragePrivateStorageMap(storage);
+  return s.onPropertyChange(listener);
 }
 
 export function subscribeClear(
   storage: BrowserStorage,
   listener: () => void
 ): () => void {
-  let s: StorageMap | undefined = getStoragePrivateStorageMap(storage);
-  s.clearListeners.add(listener);
-
-  return () => {
-    if (s != null && s.clearListeners.delete(listener)) {
-      s = undefined;
-    }
-  };
+  let s = getStoragePrivateStorageMap(storage);
+  return s.onClearChange(listener);
 }
 
 /**
