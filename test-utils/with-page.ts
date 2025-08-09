@@ -1,8 +1,7 @@
 //#region Imports
-import fs from "fs";
-import path from "path";
-import { launch, Page } from "puppeteer";
-import type { ExecutionContext, ImplementationResult } from "ava";
+import path from "node:path";
+import { firefox } from "playwright";
+import { rolldown } from "rolldown";
 //#endregion
 
 const EMPTY_HTML = `<!DOCTYPE html>
@@ -15,30 +14,35 @@ const EMPTY_HTML = `<!DOCTYPE html>
   <body></body>
   </html>`;
 
-/**
- * @todo Make sure microbundler run before test
- */
-export default async function withPage<Context = unknown>(
-  t: ExecutionContext<Context>,
-  run: (t: ExecutionContext<Context>, page: Page) => ImplementationResult
-): Promise<void> {
-  const browser = await launch();
+export async function withPage() {
+  const browser = await firefox.launch({
+    headless: true,
+  });
+
   const page = await browser.newPage();
 
   await page.setContent(EMPTY_HTML, {
     waitUntil: "load",
   });
 
-  await page.addScriptTag({
-    content: fs
-      .readFileSync(path.resolve(__dirname, "../dist/index.umd.js"))
-      .toString(),
+  const build = await rolldown({
+    input: path.resolve(import.meta.dirname, "..", "lib", "index.ts"),
   });
 
-  try {
-    await run(t, page);
-  } finally {
-    await page.close();
-    await browser.close();
-  }
+  const { output } = await build.generate({
+    format: "umd",
+    name: "browserStorage",
+    externalLiveBindings: false,
+  });
+
+  await page.addScriptTag({
+    content: output[0].code,
+  });
+
+  return Object.assign(page, {
+    [Symbol.asyncDispose]: async () => {
+      await page.close();
+      await browser.close();
+    },
+  });
 }

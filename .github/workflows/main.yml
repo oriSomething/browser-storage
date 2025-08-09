@@ -6,12 +6,26 @@ jobs:
   test:
     name: test
     runs-on: ubuntu-latest
-
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v1
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        name: install pnpm
         with:
-          node-version: 12
-      - run: yarn
-      - run: yarn run build
-      - run: yarn test
+          run_install: false
+
+      - name: install node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "pnpm"
+
+      - name: install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: lint
+        run: pnpm /lint:/
+
+      - name: run tests
+        run: pnpm test

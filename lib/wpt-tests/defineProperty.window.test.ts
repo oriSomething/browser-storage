@@ -4,12 +4,12 @@
  */
 
 //#region Imports
-import test from "ava";
+import { describe, expect, test } from "vitest";
 import { BrowserStorage } from "../index";
 //#endregion
 
-[9, "x"].forEach(function (key) {
-  test(`Reflect.defineProperty(…): Defining data property for key ${key}`, (t) => {
+describe.sequential.each([9, "x"])("%j", function (key) {
+  test(`Reflect.defineProperty(…): Defining data property for key ${key}`, () => {
     var desc = {
       value: "value",
     };
@@ -17,14 +17,14 @@ import { BrowserStorage } from "../index";
     const storage = new BrowserStorage();
     key = key as string;
 
-    t.is(storage[key], undefined);
-    t.is(storage.getItem(key), null);
-    t.is(Object.defineProperty(storage, key, desc), storage);
-    t.is(storage[key], "value");
-    t.is(storage.getItem(key), "value");
+    expect(storage[key]).toBe(undefined);
+    expect(storage.getItem(key as string)).toBe(null);
+    expect(Object.defineProperty(storage, key, desc)).toBe(storage);
+    expect(storage[key]).toBe("value");
+    expect(storage.getItem(key as string)).toBe("value");
   });
 
-  test(`Defining data property for key ${key} twice"`, (t) => {
+  test(`Defining data property for key ${key} twice"`, () => {
     var desc1 = {
       value: "value",
     };
@@ -35,18 +35,18 @@ import { BrowserStorage } from "../index";
     var storage = new BrowserStorage();
     key = key as string;
 
-    t.is(storage[key], undefined);
-    t.is(storage.getItem(key), null);
-    t.is(Object.defineProperty(storage, key, desc1), storage);
-    t.is(storage[key], "value");
-    t.is(storage.getItem(key), "value");
+    expect(storage[key]).toBe(undefined);
+    expect(storage.getItem(key as string)).toBe(null);
+    expect(Object.defineProperty(storage, key, desc1)).toBe(storage);
+    expect(storage[key]).toBe("value");
+    expect(storage.getItem(key as string)).toBe("value");
 
-    t.is(Object.defineProperty(storage, key, desc2), storage);
-    t.is(storage[key], "new value");
-    t.is(storage.getItem(key), "new value");
+    expect(Object.defineProperty(storage, key, desc2)).toBe(storage);
+    expect(storage[key]).toBe("new value");
+    expect(storage.getItem(key as string)).toBe("new value");
   });
 
-  test(`Defining data property with toString for key ${key}`, (t) => {
+  test(`Defining data property with toString for key ${key}`, () => {
     var desc = {
       value: {
         toString: function () {
@@ -58,10 +58,10 @@ import { BrowserStorage } from "../index";
     var storage = new BrowserStorage();
     key = key as string;
 
-    t.is(storage[key], undefined);
-    t.is(storage.getItem(key), null);
-    t.is(Object.defineProperty(storage, key, desc), storage);
-    t.is(storage[key], "value");
-    t.is(storage.getItem(key), "value");
+    expect(storage[key]).toBe(undefined);
+    expect(storage.getItem(key as string)).toBe(null);
+    expect(Object.defineProperty(storage, key, desc)).toBe(storage);
+    expect(storage[key]).toBe("value");
+    expect(storage.getItem(key as string)).toBe("value");
   });
 });

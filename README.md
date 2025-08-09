@@ -5,16 +5,8 @@ It's good for testing. But it also good for environments that you need to polyfi
 
 ## Installation
 
-In Yarn:
-
 ```sh
-yarn add @orisomething/browser-storage
-```
-
-In npm:
-
-```sh
-npm i @orisomething/browser-storage --save
+pnpm install @orisomething/browser-storage
 ```
 
 ## Usuage

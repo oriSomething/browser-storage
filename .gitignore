@@ -1,13 +1,23 @@
-/dist/*
+# Logs
+*.log
+npm-debug.log*
+__screenshots__/
 
-# Node + Yarn
-/node_modules/*
-/.yarn/*
-!/.yarn/releases
-!/.yarn/plugins
-!/.yarn/sdks
-/.yarn/cache
-#/.pnp.*
+# Dependencies
+node_modules/
 
-# IDEs
-/.vscode/*
+# Cache
+tsconfig.tsbuildinfo
+.cache
+dist/
+temp/
+build/
+coverage/
+.pnpm-store/
+
+# OS crap
+.DS_Store
+
+# Editors
+.vscode/
+.devcontainer/
