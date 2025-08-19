@@ -205,7 +205,7 @@ export class BrowserStorage implements Storage {
   [name: string]: any;
 
   constructor() {
-    // The magic behind `localStorage` special behavior
+    // The magic behind `localStorage` and `sessionStorage` special behavior
     // NOTE: In JS if your return an object from `constructor` it become the actual
     //       object returned from `new` expression
     return createProxy(this);
@@ -220,11 +220,23 @@ export class BrowserStorage implements Storage {
   }
 
   getItem(key: string): string | null {
+    if (arguments.length === 0) {
+      throw new TypeError(
+        `Storage.getItem: At least 1 argument required, but only ${arguments.length} passed`,
+      );
+    }
+
     const value = getStorage(this).get(key);
     return value == null ? null : value;
   }
 
   key(index: number): string | null {
+    if (arguments.length === 0) {
+      throw new TypeError(
+        `Storage.key: At least 1 argument required, but only ${arguments.length} passed`,
+      );
+    }
+
     let count = 0;
 
     for (const key of getStorage(this).keys()) {
@@ -238,6 +250,12 @@ export class BrowserStorage implements Storage {
   }
 
   removeItem(key: string): void {
+    if (arguments.length === 0) {
+      throw new TypeError(
+        `Storage.removeItem: At least 1 argument required, but only ${arguments.length} passed`,
+      );
+    }
+
     getStorage(this).delete(key);
   }
 
@@ -245,6 +263,12 @@ export class BrowserStorage implements Storage {
    * @todo Support `QuotaExceededError` throwing for settings "size limit"
    */
   setItem(key: string, value: string): void {
+    if (arguments.length < 2) {
+      throw new TypeError(
+        `Storage.setItem: At least 2 argument required, but only ${arguments.length} passed`,
+      );
+    }
+
     getStorage(this).set(key, value);
   }
 }

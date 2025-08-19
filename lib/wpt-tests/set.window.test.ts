@@ -1,6 +1,5 @@
 /**
  * Based on WPT with modifications
- * Some tests are omitted since they don't pass browser neither
  * @see {@link https://github.com/web-platform-tests/wpt/blob/master/webstorage/set.window.js}
  */
 
