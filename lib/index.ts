@@ -239,8 +239,10 @@ export class BrowserStorage implements Storage {
 
     let count = 0;
 
+    const i = index % 0x100000000;
+
     for (const key of getStorage(this).keys()) {
-      if (count === index) {
+      if (count === i) {
         return key;
       }
       count++;
