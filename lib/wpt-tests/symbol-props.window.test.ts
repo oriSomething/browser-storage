@@ -50,7 +50,13 @@ test("storage: defineProperty not configurable", () => {
   var desc = Object.getOwnPropertyDescriptor(storage, key)!;
   expect(desc.configurable, "configurable").toBe(false);
 
-  expect(delete storage[key as any]).toBe(false);
+  const looseModeFunction = new Function(
+    "storage",
+    "key",
+    "return (delete storage[key]);",
+  );
+
+  expect(looseModeFunction(storage, key)).toBe(false);
   expect(storage[key as any]).toBe("test");
 });
 

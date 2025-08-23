@@ -107,7 +107,11 @@ function createProxy(instance: BrowserStorage) {
   //#region Proxy wrapper
   const proxy = new Proxy(instance, {
     has: (target, key) => {
-      return Reflect.has(target, key) || storage.has(key);
+      if (Reflect.has(target, key)) {
+        return true;
+      }
+
+      return typeof key === "string" ? storage.has(key) : false;
     },
 
     get: (target, key, receiver) => {
@@ -120,7 +124,7 @@ function createProxy(instance: BrowserStorage) {
       if (Reflect.has(target, key)) {
         return Reflect.get(target, key, receiver);
       } else {
-        return storage.get(key);
+        return typeof key !== "symbol" ? storage.get(key) : undefined;
       }
     },
 
@@ -146,7 +150,7 @@ function createProxy(instance: BrowserStorage) {
         if (value !== undefined) return value;
       }
 
-      if (storage.has(property)) {
+      if (typeof property === "string" && storage.has(property)) {
         return {
           value: storage.get(property),
           writable: true,
@@ -185,14 +189,23 @@ function createProxy(instance: BrowserStorage) {
         return true;
       }
 
+      if (typeof property === "symbol") {
+        return Reflect.defineProperty(target, property, attributes);
+      }
+
       return false;
     },
 
     // NOTE: Not sure if there is any case it returns `false`
     deleteProperty: (target, property) => {
-      Reflect.deleteProperty(target, property);
-      storage.delete(property);
-      return true;
+      const result = Reflect.deleteProperty(target, property);
+
+      if (typeof property !== "symbol") {
+        storage.delete(property);
+        return true;
+      }
+
+      return result;
     },
   });
   //#endregion
