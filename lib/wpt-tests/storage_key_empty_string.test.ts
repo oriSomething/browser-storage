@@ -27,6 +27,5 @@ test(".key with empty string", function () {
   storage.clear();
 
   storage.setItem("", "empty string");
-  debugger;
   expect(storage.getItem("")).toBe("empty string");
 });
