@@ -19,7 +19,7 @@
 
 //#region Imports
 import { expect, test } from "vitest";
-import { BrowserStorage } from "../index";
+import { BrowserStorage } from "../storage";
 //#endregion
 
 test("should be not rendered unusable by setting a key with the same name as a storage function such that the function is hidden", () => {

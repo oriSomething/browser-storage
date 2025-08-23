@@ -4,16 +4,16 @@ import {
   subscribeClear,
   subscribePropertyChange,
   BrowserStorage,
-  getStoragePrivateStorageMap,
   setWithEmitStorage,
   removeWithEmitStorage,
-} from "./index";
+} from "./storage";
 import { withPage } from "../test-utils/with-page";
+import { getStoragePrivateStorageMap } from "./private/storage-map";
 
 /**
  * Used for tests with puppeteer
  */
-declare var browserStorage: typeof import("./index");
+declare var browserStorage: typeof import("./storage");
 //#endregion
 
 //#region Integration

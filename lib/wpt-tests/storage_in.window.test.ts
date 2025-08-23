@@ -19,7 +19,7 @@
 
 //#region Imports
 import { expect, test } from "vitest";
-import { BrowserStorage } from "../index";
+import { BrowserStorage } from "../storage";
 //#endregion
 
 test("The in operator in storage: property access", function () {
