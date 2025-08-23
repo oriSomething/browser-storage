@@ -11,10 +11,10 @@
     "node": ">= 18"
   },
   "scripts": {
-    "build": "rolldown -c rolldown.config.ts",
+    "build": "rm -rf dist && rolldown -c rolldown.config.ts",
     "test": "vitest",
     "lint:eslint": "eslint . --max-warnings 0",
-    "lint:prettier": " pnpm prettier --check .",
+    "lint:prettier": "pnpm prettier --check .",
     "lint:tsc": "tsc -p ."
   },
   "type": "module",
