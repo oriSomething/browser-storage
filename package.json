@@ -8,52 +8,40 @@
     "url": "https://github.com/oriSomething/browser-storage"
   },
   "engines": {
-    "node": ">= 12"
+    "node": ">= 18"
   },
   "scripts": {
-    "prepack": "yarn run build",
-    "build": "rm -rf dist && microbundle --target node --compress",
-    "lint": "eslint lib/**/*.{js,ts} --max-warnings 0",
-    "pretest": "yarn run build",
-    "test": "ava"
+    "build": "rolldown -c rolldown.config.ts",
+    "test": "vitest",
+    "lint:eslint": "eslint . --max-warnings 0",
+    "lint:prettier": " pnpm prettier --check .",
+    "lint:tsc": "tsc -p ."
   },
-  "source": "lib/index.ts",
-  "main": "dist/index.js",
-  "module": "dist/index.mjs",
-  "esmodule": "dist/index.modern.js",
-  "unpkg": "dist/index.umd.js",
+  "type": "module",
+  "packageManager": "pnpm@10.10.0+sha512.d615db246fe70f25dcfea6d8d73dee782ce23e2245e3c4f6f888249fb568149318637dca73c2c5c8ef2a4ca0d5657fb9567188bfab47f566d1ee6ce987815c39",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
   "sideEffects": false,
-  "resolutions": {
-    "typescript": "^4.1.2"
-  },
   "files": [
-    "dist/*",
-    "tsconfig.json"
+    "dist"
   ],
   "devDependencies": {
-    "@types/puppeteer": "^5.4.0",
-    "@typescript-eslint/eslint-plugin": "^4.8.2",
-    "@typescript-eslint/parser": "^4.8.2",
-    "ava": "^3.13.0",
-    "eslint": "^7.14.0",
-    "microbundle": "^0.12.4",
-    "prettier": "^2.2.0",
-    "puppeteer": "^5.5.0",
-    "ts-node": "^9.0.0",
-    "typescript": "^4.1.2"
-  },
-  "ava": {
-    "extensions": [
-      "ts"
-    ],
-    "require": [
-      "ts-node/register/transpile-only"
-    ]
-  },
-  "browserslist": [
-    "node 12"
-  ],
-  "mangle": {
-    "regex": "^_"
+    "@eslint/js": "^9.33.0",
+    "@types/node": "^24.3.0",
+    "eslint": "^9.33.0",
+    "globals": "^16.3.0",
+    "playwright": "^1.54.2",
+    "prettier": "^3.6.2",
+    "rolldown": "1.0.0-beta.33",
+    "type-fest": "^4.41.0",
+    "typescript": "^5.9.2",
+    "typescript-eslint": "^8.40.0",
+    "vite": "^7.1.3",
+    "vite-plugin-dts": "^4.5.4",
+    "vitest": "^3.2.4"
   }
 }

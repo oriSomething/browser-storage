@@ -1,5 +1,5 @@
 //#region Imports
-import test from "ava";
+import { test, expect } from "vitest";
 import {
   subscribeClear,
   subscribePropertyChange,
@@ -8,7 +8,7 @@ import {
   setWithEmitStorage,
   removeWithEmitStorage,
 } from "./index";
-import withPage from "../test-utils/with-page";
+import { withPage } from "../test-utils/with-page";
 
 /**
  * Used for tests with puppeteer
@@ -17,118 +17,119 @@ declare var browserStorage: typeof import("./index");
 //#endregion
 
 //#region Integration
-test("getItem -> setItem -> getItem", (t) => {
+test("getItem -> setItem -> getItem", () => {
   const s = new BrowserStorage();
   const key = Math.random().toString(32);
   const value = Math.random().toString(32);
 
-  t.is(s.getItem(key), null, "returns null when key doesn't exist");
-  t.is(s[key], undefined, "property is undefined when key doesn't exist");
+  expect(s.getItem(key), "returns null when key doesn't exist").toBe(null);
+  expect(s[key], "property is undefined when key doesn't exist").toBe(
+    undefined,
+  );
 
   s.setItem(key, value);
 
-  t.is(s.getItem(key), value, "returns expected value");
-  t.is(s[key], value, "property is expected value");
+  expect(s.getItem(key), "returns expected value").toBe(value);
+  expect(s[key], "property is expected value").toBe(value);
 });
 //#endregion
 
 //#region Unit - Storage API
-test("getItem()", (t) => {
+test("getItem()", () => {
   const s = new BrowserStorage();
   getStoragePrivateStorageMap(s)
     //
     .set("a", "value - a")
     .set("b", "value - b");
 
-  t.is(s.getItem("a"), "value - a");
-  t.is(s.getItem("b"), "value - b");
-  t.is(s.getItem("c"), null, "`null` for none exist item");
+  expect(s.getItem("a")).toBe("value - a");
+  expect(s.getItem("b")).toBe("value - b");
+  expect(s.getItem("c"), "`null` for none exist item").toBe(null);
 });
 
-test("Reflect.get(…)", (t) => {
+test("Reflect.get(…)", () => {
   const s = new BrowserStorage();
   getStoragePrivateStorageMap(s)
     //
     .set("a", "value - a")
     .set("b", "value - b");
 
-  t.is(s["a"], "value - a");
-  t.is(s["b"], "value - b");
-  t.is(s["c"], undefined, "`undefined` for none exist item");
+  expect(s["a"]).toBe("value - a");
+  expect(s["b"]).toBe("value - b");
+  expect(s["c"], "`undefined` for none exist item").toBeUndefined();
 });
 
-test("setItem()", (t) => {
+test("setItem()", () => {
   const s = new BrowserStorage();
   const key = Math.random().toString(32);
   const value = Math.random().toString(32);
 
   s.setItem(key, value);
-  t.is(getStoragePrivateStorageMap(s).get(key), value);
+  expect(getStoragePrivateStorageMap(s).get(key)).toBe(value);
 });
 
-test("setItem(): convert non-string to string as browser does", (t) => {
-  function test(before: any, after: string) {
+test("setItem(): convert non-string to string as browser does", () => {
+  function assert(before: any, after: string) {
     const s = new BrowserStorage();
     const key = Math.random().toString(32);
     s.setItem(key, before);
-    t.is(getStoragePrivateStorageMap(s).get(key), after);
+    expect(getStoragePrivateStorageMap(s).get(key)).toBe(after);
   }
 
-  test({}, "[object Object]");
-  test({ x: 1 }, "[object Object]");
-  test(new (class X {})(), "[object Object]");
-  test(1, "1");
-  test(777n, "777");
-  test(null, "null");
-  test(undefined, "undefined");
+  expect.assertions(7);
+  assert({}, "[object Object]");
+  assert({ x: 1 }, "[object Object]");
+  assert(new (class X {})(), "[object Object]");
+  assert(1, "1");
+  assert(777n, "777");
+  assert(null, "null");
+  assert(undefined, "undefined");
 });
 
-test("setItem(): convert Date to string as browser does", (t) => {
+test("setItem(): convert Date to string as browser does", () => {
   const s = new BrowserStorage();
   const key = Math.random().toString(32);
   s.setItem(key, new Date(Date.UTC(2000, 0, 1, 0, 0, 0, 0)) as any);
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  t.regex(getStoragePrivateStorageMap(s).get(key)!, /^Sat Jan 01 2000 /);
+  expect(getStoragePrivateStorageMap(s).get(key)).toMatch(/^Sat Jan 01 2000 /);
 });
 
-test("Reflect.set(…): non prototype", (t) => {
-  function test(before: any, after: string) {
+test("Reflect.set(…): non prototype", () => {
+  function assert(before: any, after: string) {
     const s = new BrowserStorage();
     const key = Math.random().toString(32);
     s[key] = before;
-    t.is(getStoragePrivateStorageMap(s).get(key), after);
+    expect(getStoragePrivateStorageMap(s).get(key)).toBe(after);
   }
 
-  test("a", "a");
-  test("abc", "abc");
-  test(null, "null");
-  test(undefined, "undefined");
+  expect.assertions(4);
+  assert("a", "a");
+  assert("abc", "abc");
+  assert(null, "null");
+  assert(undefined, "undefined");
 });
 
-test("Reflect.set(…): prototype", (t) => {
+test("Reflect.set(…): prototype", () => {
   const s = new BrowserStorage();
   const value = () => {};
   s.setItem = value;
-
-  t.false(getStoragePrivateStorageMap(s).has("setItem"));
-  t.is(s.setItem, value);
+  expect(s.setItem).toBe(BrowserStorage.prototype.setItem);
 });
 
-test("length", (t) => {
+test("length", () => {
   const s = new BrowserStorage();
 
-  t.is(s.length, 0);
+  expect(s.length).toBe(0);
   s.setItem("a", "1");
-  t.is(s.length, 1);
+  expect(s.length).toBe(1);
   s.setItem("a", "2");
-  t.is(s.length, 1);
+  expect(s.length).toBe(1);
   s.setItem("b", "2");
-  t.is(s.length, 2);
+  expect(s.length).toBe(2);
   s.removeItem("a");
-  t.is(s.length, 1);
+  expect(s.length).toBe(1);
 });
 
-test("key()", (t) => {
+test("key()", () => {
   const s = new BrowserStorage();
   const inner = getStoragePrivateStorageMap(s);
 
@@ -137,36 +138,36 @@ test("key()", (t) => {
   for (let key of keys) inner.set(key, "zzz");
 
   for (let [index, key] of keys.entries()) {
-    t.is(s.key(index), key);
+    expect(s.key(index)).toBe(key);
   }
 
-  t.is(s.key(777), null, "returns null for out of bounds key");
+  expect(s.key(777), "returns null for out of bounds key").toBeNull();
 });
 
-test("Reflect.ownKeys(…)", (t) => {
+test("Reflect.ownKeys(…)", () => {
   const s = new BrowserStorage();
 
-  t.deepEqual(Reflect.ownKeys(s), []);
+  expect(Reflect.ownKeys(s)).toStrictEqual([]);
 
   s.setItem("a", "aaa");
-  t.deepEqual(Reflect.ownKeys(s), ["a"]);
+  expect(Reflect.ownKeys(s)).toStrictEqual(["a"]);
 
   s.zzz = "bbb";
-  t.deepEqual(Reflect.ownKeys(s), ["a", "zzz"]);
+  expect(Reflect.ownKeys(s)).toStrictEqual(["a", "zzz"]);
 
   s.setItem = () => {};
-  t.deepEqual(Reflect.ownKeys(s), ["setItem", "a", "zzz"]);
+  expect(Reflect.ownKeys(s)).toStrictEqual(["a", "zzz"]);
 });
 
-test("Object.keys(…)", (t) => {
+test("Object.keys(…)", () => {
   const s = new BrowserStorage();
   s.setItem("a", "aaa");
   s.zzz = "bbb";
 
-  t.deepEqual(Object.keys(s), ["a", "zzz"]);
+  expect(Object.keys(s)).toStrictEqual(["a", "zzz"]);
 });
 
-test("clear()", (t) => {
+test("clear()", () => {
   const s = new BrowserStorage();
   const inner = getStoragePrivateStorageMap(s);
 
@@ -174,36 +175,36 @@ test("clear()", (t) => {
   inner.set("b", "2");
   inner.set("c", "3");
 
-  t.is(inner.size, 3);
+  expect(inner.size).toBe(3);
   inner.clear();
-  t.is(inner.size, 0);
+  expect(inner.size).toBe(0);
 });
 
-test("removeItem()", (t) => {
+test("removeItem()", () => {
   const s = new BrowserStorage();
   const inner = getStoragePrivateStorageMap(s);
 
-  t.false(inner.has("FFF"));
+  expect(inner.has("FFF")).toBe(false);
   inner.set("FFF", "GGG");
-  t.true(inner.has("FFF"));
+  expect(inner.has("FFF")).toBe(true);
   s.removeItem("FFF");
-  t.false(inner.has("FFF"));
+  expect(inner.has("FFF")).toBe(false);
 });
 
-test("Reflect.deleteProperty(…)", (t) => {
+test("Reflect.deleteProperty(…)", () => {
   const s = new BrowserStorage();
   const inner = getStoragePrivateStorageMap(s);
 
-  t.false(inner.has("FFF"));
+  expect(inner.has("FFF")).toBe(false);
   inner.set("FFF", "GGG");
-  t.true(inner.has("FFF"));
+  expect(inner.has("FFF")).toBe(true);
 
-  t.is(delete s.FFF, true);
-  t.is(delete s.FFF, true);
-  t.is(delete s.ZZZ, true);
+  expect(delete s.FFF).toBe(true);
+  expect(delete s.FFF).toBe(true);
+  expect(delete s.ZZZ).toBe(true);
 });
 
-test("JSON.stringify()", (t) => {
+test("JSON.stringify()", () => {
   const s = new BrowserStorage();
   getStoragePrivateStorageMap(s)
     //
@@ -211,21 +212,21 @@ test("JSON.stringify()", (t) => {
     .set("b", "2")
     .set("c", "3");
 
-  t.is(JSON.stringify(s), `{"a":"1","b":"2","c":"3"}`);
+  expect(JSON.stringify(s)).toBe(`{"a":"1","b":"2","c":"3"}`);
 });
 //#endregion
 
 //#region Unit - Hooks
-test("subscribePropertyChange(): setItem", (t) => {
-  t.plan(4);
+test("subscribePropertyChange(): setItem", () => {
+  expect.assertions(4);
 
   const s = new BrowserStorage();
 
   let counter = 0;
 
   const off = subscribePropertyChange(s, (key, value) => {
-    t.is(key, "zzz");
-    t.is(value, String(counter));
+    expect(key).toBe("zzz");
+    expect(value).toBe(String(counter));
   });
 
   s.setItem("zzz", String(++counter));
@@ -235,16 +236,16 @@ test("subscribePropertyChange(): setItem", (t) => {
   s.setItem("zzz", String(++counter));
 });
 
-test("subscribePropertyChange(): removeItem", (t) => {
-  t.plan(2);
+test("subscribePropertyChange(): removeItem", () => {
+  expect.assertions(2);
 
   const s = new BrowserStorage();
 
   s.setItem("zzz", "1");
 
   const off = subscribePropertyChange(s, (key, value) => {
-    t.is(key, "zzz");
-    t.is(value, null);
+    expect(key).toBe("zzz");
+    expect(value).toBe(null);
   });
 
   s.removeItem("zzz");
@@ -252,23 +253,29 @@ test("subscribePropertyChange(): removeItem", (t) => {
   s.removeItem("zzz");
 });
 
-test("subscribeClear()", (t) => {
-  t.plan(1);
+test("subscribeClear()", async () => {
+  expect.assertions(0);
 
   const s = new BrowserStorage();
 
+  const { promise, resolve } = Promise.withResolvers<void>();
+
   const off = subscribeClear(s, () => {
-    t.pass();
+    resolve();
   });
 
   s.clear();
   off();
   s.clear();
+
+  await promise;
 });
 //#endregion
 
 //#region E2E tests
-test("Emulating storage event for setItem", withPage, async (t, page) => {
+test("Emulating storage event for setItem", async function () {
+  await using page = await withPage();
+
   const result = await page.evaluate(() => {
     const s = new browserStorage.BrowserStorage();
 
@@ -289,7 +296,7 @@ test("Emulating storage event for setItem", withPage, async (t, page) => {
     return returnValue;
   });
 
-  t.deepEqual(result, {
+  expect(result).toStrictEqual({
     type: "storage",
     is_storageArea: true,
     key: "abc",
@@ -298,7 +305,9 @@ test("Emulating storage event for setItem", withPage, async (t, page) => {
   });
 });
 
-test("Emulating storage event for removeItem", withPage, async (t, page) => {
+test("Emulating storage event for removeItem", async function () {
+  await using page = await withPage();
+
   const result = await page.evaluate(() => {
     const s = new browserStorage.BrowserStorage();
 
@@ -320,7 +329,7 @@ test("Emulating storage event for removeItem", withPage, async (t, page) => {
     return returnValue;
   });
 
-  t.deepEqual(result, {
+  expect(result).toStrictEqual({
     type: "storage",
     is_storageArea: true,
     key: "abc",
@@ -331,12 +340,12 @@ test("Emulating storage event for removeItem", withPage, async (t, page) => {
 
 test.todo("Emulating storage event, won't happens if value didn't change");
 
-test("Emulating is noop in non-Browser context context", (t) => {
+test("Emulating is noop in non-Browser context context", () => {
+  expect.assertions(0);
+
   const s = new BrowserStorage();
 
   setWithEmitStorage(s, "abc", "zzz");
   removeWithEmitStorage(s, "abc");
-
-  t.pass();
 });
-//#endregion
+// //#endregion

@@ -1,11 +1,11 @@
 /**
- * Used to access to the real `Map` conatains all data of storage instance
+ * Used to access to the real `Map` contains all data of storage instance
  */
 const STORAGE_SYMBOL = Symbol("BrowserStorage storage");
 
 //#region Helpers
 /**
- * Return the value that closest to how borwsers convert to string values in `localStorage`
+ * Return the value that closest to how browser convert to string values in `localStorage`
  */
 function getString(value: any) {
   return "" + value;
@@ -21,43 +21,43 @@ function getStorage(instance: BrowserStorage) {
  * Wrapper to `Map` with needed modifications to work more as `localStorage` is
  */
 class StorageMap {
-  private _map = new Map<string, string>();
+  #map = new Map<string, string>();
 
   //#region Listeners
-  private _clearListeners = new Set<() => void>();
-  private _propertyChangeListeners = new Set<
+  #clearListeners = new Set<() => void>();
+  #propertyChangeListeners = new Set<
     (key: string, value: string | null) => void
   >();
 
   onPropertyChange(
-    listener: (key: string, value: string | null) => void
+    listener: (key: string, value: string | null) => void,
   ): () => void {
-    this._propertyChangeListeners.add(listener);
-    return () => void this._propertyChangeListeners.delete(listener);
+    this.#propertyChangeListeners.add(listener);
+    return () => void this.#propertyChangeListeners.delete(listener);
   }
 
   onClearChange(listener: () => void): () => void {
-    this._clearListeners.add(listener);
-    return () => void this._clearListeners.delete(listener);
+    this.#clearListeners.add(listener);
+    return () => void this.#clearListeners.delete(listener);
   }
   //#endregion
 
   //#region Map needed functionality
   has(key: PropertyKey) {
-    return this._map.has(getString(key));
+    return this.#map.has(getString(key));
   }
 
   get(key: PropertyKey) {
-    return this._map.get(getString(key));
+    return this.#map.get(getString(key));
   }
 
   set(key: PropertyKey, value: string) {
     const k = getString(key);
     const v = getString(value);
-    this._map.set(k, v);
+    this.#map.set(k, v);
 
-    if (this._propertyChangeListeners.size !== 0) {
-      for (let cb of this._propertyChangeListeners) {
+    if (this.#propertyChangeListeners.size !== 0) {
+      for (const cb of this.#propertyChangeListeners) {
         cb(k, v);
       }
     }
@@ -66,19 +66,19 @@ class StorageMap {
   }
 
   clear() {
-    this._map.clear();
+    this.#map.clear();
 
-    if (this._clearListeners.size !== 0) {
-      for (let cb of this._clearListeners) cb();
+    if (this.#clearListeners.size !== 0) {
+      for (const cb of this.#clearListeners) cb();
     }
   }
 
   delete(key: PropertyKey) {
     const k = getString(key);
-    const returnValue = this._map.delete(k);
+    const returnValue = this.#map.delete(k);
 
-    if (this._propertyChangeListeners.size !== 0) {
-      for (let cb of this._propertyChangeListeners) {
+    if (this.#propertyChangeListeners.size !== 0) {
+      for (const cb of this.#propertyChangeListeners) {
         cb(k, null);
       }
     }
@@ -87,11 +87,11 @@ class StorageMap {
   }
 
   get size() {
-    return this._map.size;
+    return this.#map.size;
   }
 
   *keys() {
-    yield* this._map.keys();
+    yield* this.#map.keys();
   }
   //#endregion
 }
@@ -107,31 +107,52 @@ function createProxy(instance: BrowserStorage) {
   //#region Proxy wrapper
   const proxy = new Proxy(instance, {
     has: (target, key) => {
-      return Reflect.has(target, key) || storage.has(key);
+      if (Reflect.has(target, key)) {
+        return true;
+      }
+
+      return typeof key === "string" ? storage.has(key) : false;
     },
 
     get: (target, key, receiver) => {
       if (key === STORAGE_SYMBOL) return storage;
 
+      if (Reflect.has(target.constructor.prototype, key)) {
+        return Reflect.get(target.constructor.prototype, key, receiver);
+      }
+
       if (Reflect.has(target, key)) {
         return Reflect.get(target, key, receiver);
       } else {
-        return storage.get(key);
+        return typeof key !== "symbol" ? storage.get(key) : undefined;
       }
     },
 
     ownKeys: (target) => {
-      return [...Reflect.ownKeys(target), ...storage.keys()];
+      const keys = Reflect.ownKeys(target);
+
+      for (const key of storage.keys()) {
+        if (!Reflect.has(target.constructor.prototype, key)) {
+          keys.push(key);
+        }
+      }
+
+      return keys;
     },
 
     getOwnPropertyDescriptor: (target, property) => {
-      const value = Reflect.getOwnPropertyDescriptor(target, property);
-      if (value !== undefined) return value;
+      if (Reflect.has(target.constructor.prototype, property)) {
+        return undefined;
+      }
 
-      if (storage.has(property)) {
+      if (Reflect.has(target, property)) {
+        const value = Reflect.getOwnPropertyDescriptor(target, property);
+        if (value !== undefined) return value;
+      }
+
+      if (typeof property === "string" && storage.has(property)) {
         return {
-          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-          value: storage.get(property)!,
+          value: storage.get(property),
           writable: true,
           enumerable: true,
           configurable: true,
@@ -142,7 +163,7 @@ function createProxy(instance: BrowserStorage) {
     },
 
     set: (target, property, value, receiver) => {
-      if (Reflect.has(target, property)) {
+      if (typeof property === "symbol") {
         return Reflect.set(target, property, value, receiver);
       }
 
@@ -163,16 +184,28 @@ function createProxy(instance: BrowserStorage) {
         throw new TypeError("Accessor properties are not allowed");
       }
 
-      storage.set(property, attributes.value);
+      if (typeof property === "string") {
+        storage.set(property, attributes.value);
+        return true;
+      }
 
-      return true;
+      if (typeof property === "symbol") {
+        return Reflect.defineProperty(target, property, attributes);
+      }
+
+      return false;
     },
 
     // NOTE: Not sure if there is any case it returns `false`
     deleteProperty: (target, property) => {
-      Reflect.deleteProperty(target, property);
-      storage.delete(property);
-      return true;
+      const result = Reflect.deleteProperty(target, property);
+
+      if (typeof property !== "symbol") {
+        storage.delete(property);
+        return true;
+      }
+
+      return result;
     },
   });
   //#endregion
@@ -185,7 +218,7 @@ export class BrowserStorage implements Storage {
   [name: string]: any;
 
   constructor() {
-    // The magic behind `localStorage` special behaviour
+    // The magic behind `localStorage` and `sessionStorage` special behavior
     // NOTE: In JS if your return an object from `constructor` it become the actual
     //       object returned from `new` expression
     return createProxy(this);
@@ -200,15 +233,29 @@ export class BrowserStorage implements Storage {
   }
 
   getItem(key: string): string | null {
+    if (arguments.length === 0) {
+      throw new TypeError(
+        `Storage.getItem: At least 1 argument required, but only ${arguments.length} passed`,
+      );
+    }
+
     const value = getStorage(this).get(key);
     return value == null ? null : value;
   }
 
   key(index: number): string | null {
+    if (arguments.length === 0) {
+      throw new TypeError(
+        `Storage.key: At least 1 argument required, but only ${arguments.length} passed`,
+      );
+    }
+
     let count = 0;
 
-    for (let key of getStorage(this).keys()) {
-      if (count === index) {
+    const i = index % 0x100000000;
+
+    for (const key of getStorage(this).keys()) {
+      if (count === i) {
         return key;
       }
       count++;
@@ -218,6 +265,12 @@ export class BrowserStorage implements Storage {
   }
 
   removeItem(key: string): void {
+    if (arguments.length === 0) {
+      throw new TypeError(
+        `Storage.removeItem: At least 1 argument required, but only ${arguments.length} passed`,
+      );
+    }
+
     getStorage(this).delete(key);
   }
 
@@ -225,6 +278,12 @@ export class BrowserStorage implements Storage {
    * @todo Support `QuotaExceededError` throwing for settings "size limit"
    */
   setItem(key: string, value: string): void {
+    if (arguments.length < 2) {
+      throw new TypeError(
+        `Storage.setItem: At least 2 argument required, but only ${arguments.length} passed`,
+      );
+    }
+
     getStorage(this).set(key, value);
   }
 }
@@ -235,24 +294,24 @@ export class BrowserStorage implements Storage {
  * @param storage
  */
 export function getStoragePrivateStorageMap(
-  storage: BrowserStorage
+  storage: BrowserStorage,
 ): StorageMap {
   return getStorage(storage);
 }
 
 export function subscribePropertyChange(
   storage: BrowserStorage,
-  listener: (key: string, value: string | null) => void
+  listener: (key: string, value: string | null) => void,
 ): () => void {
-  let s = getStoragePrivateStorageMap(storage);
+  const s = getStoragePrivateStorageMap(storage);
   return s.onPropertyChange(listener);
 }
 
 export function subscribeClear(
   storage: BrowserStorage,
-  listener: () => void
+  listener: () => void,
 ): () => void {
-  let s = getStoragePrivateStorageMap(storage);
+  const s = getStoragePrivateStorageMap(storage);
   return s.onClearChange(listener);
 }
 
@@ -268,7 +327,7 @@ export function subscribeClear(
 export function setWithEmitStorage(
   storage: BrowserStorage,
   key: string,
-  newValue: string
+  newValue: string,
 ): void {
   const oldValue = storage.getItem(key);
   storage.setItem(key, newValue);
@@ -311,7 +370,7 @@ export function setWithEmitStorage(
  */
 export function removeWithEmitStorage(
   storage: BrowserStorage,
-  key: string
+  key: string,
 ): void {
   const oldValue = storage.getItem(key);
   storage.removeItem(key);
