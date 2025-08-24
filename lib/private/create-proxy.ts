@@ -96,7 +96,6 @@ export function createProxy(instance: BrowserStorage) {
       return false;
     },
 
-    // NOTE: Not sure if there is any case it returns `false`
     deleteProperty: (target, property) => {
       const result = Reflect.deleteProperty(target, property);
 
