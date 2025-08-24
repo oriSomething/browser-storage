@@ -4,13 +4,12 @@ on:
   release:
     types: [published]
 
-permissions:
-  id-token: write
-  contents: read
-
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
 
     steps:
       - name: checkout
@@ -29,6 +28,9 @@ jobs:
       - name: install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: install playwright
+        run: pnpm exec playwright install firefox --with-deps
+
       - name: lint
         run: pnpm /lint:/
 
@@ -39,4 +41,8 @@ jobs:
         run: pnpm build
 
       - name: publish
-        run: pnpm publish --no-git-checks --access public
+        run: |
+          pnpm config set //registry.npmjs.org/:_authToken=$NPM_TOKEN
+          pnpm publish --no-git-checks --access public
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
