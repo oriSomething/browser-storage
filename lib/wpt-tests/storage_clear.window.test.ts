@@ -18,7 +18,7 @@
  */
 
 import { expect, test } from "vitest";
-import { BrowserStorage } from "../index";
+import { BrowserStorage } from "../storage";
 
 test("Clear in", function () {
   const storage = new BrowserStorage();

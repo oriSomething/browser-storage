@@ -19,7 +19,7 @@
 
 //#region Imports
 import { expect, test } from "vitest";
-import { BrowserStorage } from "../index";
+import { BrowserStorage } from "../storage";
 //#endregion
 
 test("enumerate a Storage object and get only the keys as a result and the built-in properties of the Storage object should be ignored", function () {

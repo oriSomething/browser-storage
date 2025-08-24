@@ -19,7 +19,7 @@
 
 //#region Imports
 import { expect, test } from "vitest";
-import { BrowserStorage } from "../index";
+import { BrowserStorage } from "../storage";
 //#endregion
 
 var test_error = { name: "test" };
